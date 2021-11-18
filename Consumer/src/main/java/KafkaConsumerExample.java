@@ -11,9 +11,6 @@ public class KafkaConsumerExample {
     private final static String KAFKA_SERVER = "localhost:29092";
     private static List<String> data = new ArrayList<>();
 
-    // Store data with timestamp
-    private static HashMap<Timestamp, String> entries = new HashMap<Timestamp, String>();
-
     public static void main (String[] args) {
         try {
             runConsumer();

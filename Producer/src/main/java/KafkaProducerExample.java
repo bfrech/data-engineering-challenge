@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -17,6 +18,7 @@ public class KafkaProducerExample {
 
     private static String TOPIC = "Topic1";
     private final static String KAFKA_SERVER = "localhost:29092";
+    private static Gson gson = new Gson();
 
     public static void main(String[] args) throws IOException {
         try {
@@ -26,14 +28,18 @@ public class KafkaProducerExample {
         }
     }
 
-    public static List<Record> readFile() throws IOException {
-        Pattern pattern = Pattern.compile(",");
+    public static List<HashMap<String, String>> readFile() throws IOException {
         BufferedReader br = new BufferedReader(new FileReader("sample_data.csv"));
-        List<Record> records = br.lines().skip(1).map(line -> {
+        Pattern pattern = Pattern.compile(",");
+        String[] labels = pattern.split(br.readLine());
+        List<HashMap<String, String>> records = br.lines().skip(1).map( line -> {
+            HashMap<String, String> record = new HashMap<>();
             String[] x = pattern.split(line);
-
-            return new Record(x[0], x[1], x[2],x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14],
-                    x[15], x[16], x[17], x[18], x[19], x[20], x[21], x[22], x[23], x[24], x[25], x[26], x[27], x[28]);
+            int i = 0;
+            for(String l: labels){
+                record.put(l, x[i++]);
+            }
+            return record;
         }).collect(Collectors.toList());
         return records;
     }
@@ -49,17 +55,18 @@ public class KafkaProducerExample {
     }
 
     private static void runProducer() throws IOException, InterruptedException {
-        List<Record> data = readFile();
-        Producer<Long, String> producer = createProducer();
-        Gson gson = new Gson();
-
-        for (Record entry: data){
-            String json = gson.toJson(entry);
-            final ProducerRecord<Long, String> record = new ProducerRecord<>(TOPIC, json);
-            producer.send(record);
-            Thread.sleep((long)(Math.random() * 1000));
+        List<HashMap<String, String>> data = readFile();
+        for (HashMap<String, String> entry: data){
+           sendDataAsJson(entry);
         }
     }
 
+    private static void sendDataAsJson(HashMap<String, String> entry) throws UnknownHostException, InterruptedException {
+        Producer<Long, String> producer = createProducer();
+        String json = gson.toJson(entry);
+        final ProducerRecord<Long, String> record = new ProducerRecord<>(TOPIC, json);
+        producer.send(record);
+        Thread.sleep((long)(Math.random() * 1000));
+    }
 }
 
